@@ -1,0 +1,23 @@
+{
+  "attributes": [
+    {
+      "name": "EYE_COLOR",
+      "hint": "green"
+    },
+    {
+      "name": "AGE",
+      "hint": "18"
+    },
+    {
+      "name": "CLIENT_NAME",
+      "hint": "{first_name: \"Agnes\", last_name: \"Driscoll\", middle_name: \"May\", nickname: \"Madame X\", maiden_name: \"Meyer\", company: \"Hebern Electric\"}",
+      "schema": {
+        "first_name": "string",
+        "last_name": "string",
+        "middle_name": "string",
+        "company": "string"
+      }
+    }
+  ]
+}
+
