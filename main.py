@@ -1,6 +1,6 @@
 import argparse
 
-from excel_loader import ExcelLoader
+from excel_loader import load_excel
 
 if(__name__ == "__main__"):
     parser = argparse.ArgumentParser()
@@ -14,7 +14,7 @@ if(__name__ == "__main__"):
     parser.add_argument('--output', type=str, help="output file of results", default='output.txt')
     args = parser.parse_args()
 
-    ExcelLoader(file_path=args.xls, records=args.records, conf_path=args.conf,
+    load_excel(file_path=args.xls, records=args.records, conf_path=args.conf,
                 url=args.url,
                 api_key=args.api_key,
                 encryption_key_file=args.encryption_key_file, decryption_key_file=args.decryption_key_file,
