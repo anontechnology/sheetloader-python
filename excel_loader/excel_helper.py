@@ -30,11 +30,9 @@ class ExcelHelper:
                     'Need a user identifier'
                 )
 
-            if not all(item in header for item in self.configuration.extract_attribute_keys()):
-                # TODO: Need to note which attribute is missing in the excel file because that's more clear.
-                raise TypeError(
-                    "Attribute missing from excel file"
-                )
+            missing_items = [item for item in self.configuration.extract_attribute_keys() if not item in header]
+            if missing_items:
+                raise TypeError("Attribute missing from excel file: "+ ", ".join(missing_items))
 
     def map_columns(self, sheet):
 
