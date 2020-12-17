@@ -1,5 +1,5 @@
-from excel_loader.configuration import Configuration
-from excel_loader.excel_helper import ExcelHelper
+from .configuration import Configuration
+from .excel_helper import ExcelHelper
 import vizivault
 import openpyxl
 

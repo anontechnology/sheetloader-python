@@ -1,1 +1,1 @@
-from excel_loader.excel_loader import ExcelLoader
+from .excel_loader import load_excel
