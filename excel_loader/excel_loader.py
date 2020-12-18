@@ -1,7 +1,25 @@
 from .configuration import Configuration
-from . import excel_helper
 import vizivault
 import openpyxl
+
+
+def map_columns(sheet, configuration):
+    
+    # Get first row of sheet, and populate headers with it
+    header = [cell.value for cell in next(sheet.rows)]
+
+    # TODO: add configuration for a unique identifier
+    if 'USERID' not in header:
+        raise TypeError(
+            'Need a user identifier'
+        )
+
+    missing_items = [item for item in configuration.extract_attribute_keys() if not item in header]
+    if missing_items:
+        raise TypeError("Attribute missing from excel file: "+ ", ".join(missing_items))
+
+    attribute_names = configuration.extract_attribute_keys() + ['USERID']
+    return {attribute_name : header.index(attribute_name) for attribute_name in attribute_names}
 
 def load_excel(file_path: str, records: int, conf_path: str,
                 url: str,
@@ -29,7 +47,7 @@ def load_excel(file_path: str, records: int, conf_path: str,
     workbook = openpyxl.load_workbook(file_path)
     for sheet in workbook.worksheets:
 
-        attribute_map = excel_helper.map_columns(sheet, configuration)
+        attribute_map = map_columns(sheet, configuration)
         for row_cells in sheet.iter_rows()[1:]:
         #TODO Need to validate users exist and if it's an update or an insertion
             new_user = vizivault.User(str(row_cells[attribute_map['USERID']].value))
