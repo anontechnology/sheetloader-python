@@ -2,24 +2,33 @@ from .configuration import Configuration
 import vizivault
 import openpyxl
 
+def validate_columns(headers, column_config):
+    if type(column_config) is str:
+        if column_config not in headers:
+            raise TypeError("Attempting to read from nonexistent column", column_config)
+    else:
+        for key, value in column_config:
+            validate_columns(headers, value)
 
-def map_columns(sheet, configuration):
+def validate_all_columns(headers, attributes):
+    for attribute in attributes:
+        validate_columns(headers, attribute['columns'])
+
+def get_primitive(attribute_schema, value):
+    if attribute_schema == "int":
+        return int(value)
+    elif attribute_schema == 'boolean':
+        return bool(value)
+    elif attribute_schema == 'double':
+        return float(value)
+    return str(value)
     
-    # Get first row of sheet, and populate headers with it
-    header = [cell.value for cell in next(sheet.rows)]
 
-    # TODO: add configuration for a unique identifier
-    if 'USERID' not in header:
-        raise TypeError(
-            'Need a user identifier'
-        )
-
-    missing_items = [item for item in configuration.extract_attribute_keys() if not item in header]
-    if missing_items:
-        raise TypeError("Attribute missing from excel file: "+ ", ".join(missing_items))
-
-    attribute_names = configuration.extract_attribute_keys() + ['USERID']
-    return {attribute_name : header.index(attribute_name) for attribute_name in attribute_names}
+def assemble_value(attribute_columns, attribute_schema, header_map, cells):
+    if type(attribute_columns) is str:
+        return get_primitive(attribute_schema, cells[header_map[attribute_columns]].value)
+    else:
+        return {column : assemble_value(attribute_columns[column], attribute_schema[column], header_map, cells) for column in attribute_columns}
 
 def load_excel(file_path: str, records: int, conf_path: str,
                 url: str,
@@ -35,29 +44,29 @@ def load_excel(file_path: str, records: int, conf_path: str,
     with open(decryption_key_file, 'r') as decryption_file:
         decryption_key = decryption_file.read()
 
-    vault = vizivault.ViziVault(base_url=url, api_key=api_key, encryption_key=encryption_key,
-                                        decryption_key=decryption_key)
+    vault = vizivault.ViziVault(base_url=url, api_key=api_key, encryption_key=encryption_key, decryption_key=decryption_key)
 
     for attribute in configuration.attributes:
         attribute_def = vizivault.AttributeDefinition(**attribute)
         vault.store_attribute_definition(attribute_definition=attribute_def)
+    # Doing this ahead of time also serves to identify vault communication exceptions. Might want to explicitly check for those though
+
 
     #TODO Load in parallel and validate data types. Mostly the existance of a valid users.
 
     workbook = openpyxl.load_workbook(file_path)
     for sheet in workbook.worksheets:
 
-        attribute_map = map_columns(sheet, configuration)
-        for row_cells in sheet.iter_rows()[1:]:
-        #TODO Need to validate users exist and if it's an update or an insertion
-            new_user = vizivault.User(str(row_cells[attribute_map['USERID']].value))
+        # use next(sheet.rows) to get the first row of the spreadsheet
+        header_map = {cell.value : i for i, cell in enumerate(next(sheet.rows))}
+        validate_all_columns(header_map.keys(), configuration.attributes)
+
+        for row_cells in sheet.iter_rows(min_row=2):
+            #TODO Need to validate users exist and if it's an update or an insertion
+            new_user = vizivault.User(str(row_cells[header_map[configuration.user_id_column]].value))
 
             for attribute in configuration.attributes:
-                if 'schema' in attribute:
-                    #TODO  handle inserting a schema value here. Probably need to separate out schema from flat attributes
-                    print("Found schema value")
-                else:
-                    new_user.add_attribute(attribute=attribute['name'], value=str(row_cells[attribute_map[attribute['name']]].value))
+                new_user.add_attribute(attribute=attribute['name'], value=assemble_value(attribute['columns'], attribute['schema'], header_map, row_cells))
             vault.save(new_user)
 
     #TODO Export the result of the upload as a lo file and STDIO. Export shoudl be inserts/updates and errors or warnings.

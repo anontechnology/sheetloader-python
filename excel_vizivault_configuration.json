@@ -1,12 +1,17 @@
 {
+  "user_id_column": "USERID",
   "attributes": [
     {
       "name": "EYE_COLOR",
-      "hint": "green"
+      "hint": "green",
+      "schema": "string",
+      "columns": "EYE_COLOR"
     },
     {
       "name": "AGE",
-      "hint": "18"
+      "hint": "18",
+      "schema": "int",
+      "columns": "AGE"
     },
     {
       "name": "CLIENT_NAME",
@@ -16,6 +21,12 @@
         "last_name": "string",
         "middle_name": "string",
         "company": "string"
+      },
+      "columns": {
+        "first_name": "CLIENT_NAME/FIRST_NAME",
+        "last_name": "CLIENT_NAME/LAST_NAME",
+        "middle_name": "CLIENT_NAME/MIDDLE_NAME",
+        "company": "CLIENT_NAME/COMPANY"
       }
     }
   ]
