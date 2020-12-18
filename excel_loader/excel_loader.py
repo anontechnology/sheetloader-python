@@ -1,5 +1,5 @@
 from .configuration import Configuration
-from .excel_helper import ExcelHelper
+from . import excel_helper
 import vizivault
 import openpyxl
 
@@ -28,10 +28,8 @@ def load_excel(file_path: str, records: int, conf_path: str,
 
     workbook = openpyxl.load_workbook(file_path)
     for sheet in workbook.worksheets:
-        spreadsheet = ExcelHelper(file_path, configuration)
-        spreadsheet.validate_columns()
 
-        attribute_map = spreadsheet.map_columns()
+        attribute_map = excel_helper.map_columns(sheet, configuration)
         for row_cells in sheet.iter_rows()[1:]:
         #TODO Need to validate users exist and if it's an update or an insertion
             new_user = vizivault.User(str(row_cells[attribute_map['USERID']].value))
