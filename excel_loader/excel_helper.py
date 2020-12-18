@@ -1,48 +1,30 @@
 import openpyxl
 
-
+# Wraps one worksheet.
 class ExcelHelper:
 
-    def __init__(self, file_path, configuration):
-        self.excel_file_path = file_path
+    def __init__(self, sheet, configuration):
+        self.sheet = sheet
         self.configuration = configuration
-
-        # TODO Handle file missing here.
-        self.workbook = openpyxl.load_workbook(file_path)
-
-    def get_header(self, sheet):
-        headers = []
-        for rows in sheet.rows:
-            for cell in rows:
-                headers.append(cell.value)
-            break
-        return headers
+        
+        # Get first row of sheet, and populate headers with it
+        self.header = [cell.value for cell in next(sheet.rows)]
 
     def validate_columns(self):
-        # TODO : use argument to specify sheets to evaluate
-        for sheet in self.workbook.worksheets:
 
-            header = self.get_header(sheet)
+        # To Do: add configuration for a unique identifier
+        if 'USERID' not in self.header:
+            raise TypeError(
+                'Need a user identifier'
+            )
 
-            # To Do: add configuration for a unique identifier
-            if 'USERID' not in header:
-                raise TypeError(
-                    'Need a user identifier'
-                )
+        missing_items = [item for item in self.configuration.extract_attribute_keys() if not item in self.header]
+        if missing_items:
+            raise TypeError("Attribute missing from excel file: "+ ", ".join(missing_items))
 
-            missing_items = [item for item in self.configuration.extract_attribute_keys() if not item in header]
-            if missing_items:
-                raise TypeError("Attribute missing from excel file: "+ ", ".join(missing_items))
-
-    def map_columns(self, sheet):
-
-        header_map = {}
-        header = self.get_header(sheet)
+    def map_columns(self):
 
         attribute_names = self.configuration.extract_attribute_keys() + ['USERID']
 
-        for attribute_name in attribute_names:
-            header_map[attribute_name] = header.index(attribute_name)
-
-        return header_map
+        return {attribute_name : self.header.index(attribute_name) for attribute_name in attribute_names}
 

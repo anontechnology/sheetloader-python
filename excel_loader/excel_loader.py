@@ -19,9 +19,6 @@ def load_excel(file_path: str, records: int, conf_path: str,
 
     vault = vizivault.ViziVault(base_url=url, api_key=api_key, encryption_key=encryption_key,
                                         decryption_key=decryption_key)
-    spreadsheet = ExcelHelper(file_path, configuration)
-
-    spreadsheet.validate_columns()
 
     for attribute in configuration.attributes:
         attribute_def = vizivault.AttributeDefinition(**attribute)
@@ -31,12 +28,12 @@ def load_excel(file_path: str, records: int, conf_path: str,
 
     workbook = openpyxl.load_workbook(file_path)
     for sheet in workbook.worksheets:
-        attribute_map = spreadsheet.map_columns(sheet)
-        for i, row_cells in enumerate(sheet.iter_rows()):
-            # Annoying hack to skip the first row. Shoudl burry this into excel helper
-            if i == 0:
-                continue
-    #TODO Need to validate users exist and if it's an update or an insertion
+        spreadsheet = ExcelHelper(file_path, configuration)
+        spreadsheet.validate_columns()
+
+        attribute_map = spreadsheet.map_columns()
+        for row_cells in sheet.iter_rows()[1:]:
+        #TODO Need to validate users exist and if it's an update or an insertion
             new_user = vizivault.User(str(row_cells[attribute_map['USERID']].value))
 
             for attribute in configuration.attributes:
