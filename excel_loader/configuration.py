@@ -11,45 +11,54 @@ class Configuration:
         # TODO Handle file missing here.
         with open(self.conf_path) as conf_file:
             configuration_dict = json.load(conf_file)
-            if not self.__validate_configuration(configuration_dict):
-                raise TypeError(
-                    'Configuration has an attribute with an illegal type'
-                )
-        return configuration_dict
+            self.__validate_configuration(configuration_dict)
+            return configuration_dict
 
     def __validate_configuration(self, configuration_dict: dict):
         for k, v in configuration_dict.items():
-            if k in ['attributes'] and self.__validate_attributes(attributes=v):
+            if k == 'attributes':
+                self.__validate_attributes(v)
                 self.attributes = v
-                continue
+            elif k == 'user_id_column':
+                self.user_id_column = v
             else:
-                return False
-        return True
+                raise TypeError('Unexpected field in configuration: '+k)
 
     def __validate_attributes(self, attributes: list):
         for attribute in attributes:
             for k, v in attribute.items():
-                if k in ['name','key', 'hint', 'createdDate', 'modifiedDate'] and isinstance(v, str):
-                    continue
-                elif k in ['immutable', 'indexed', 'mandatory'] and isinstance(v, str) and v.capitalize() in ['TRUE', 'FALSE']:
-                    continue
-                elif k in ['tags', 'regulations'] and isinstance(v, list):
-                    continue
-                elif k in ['schema'] and self.__validate_schema(configuration_dict=v):
-                    continue
+                if k in {'name','key', 'hint', 'createdDate', 'modifiedDate'}:
+                    if not isinstance(v, str):
+                        raise TypeError("Expected string for %s (got %s instead)" % (k, str(v)))
+                elif k in {'immutable', 'indexed', 'mandatory'}:
+                    if not (isinstance(v, str) and v.capitalize() in ['TRUE', 'FALSE']):
+                        raise TypeError("Expected boolean for %s (got %s instead)" % (k, str(v)))
+                elif k in {'tags', 'regulations'}:
+                    if not isinstance(v, list):
+                        raise TypeError("Expected list for %s (got %s instead)" % (k, str(v)))
+                elif k == 'schema':
+                    self.__validate_schema(v)
+                elif k == 'columns':
+                    self.__validate_columns(v)
                 else:
-                    return False
-        return True
+                    raise TypeError("Unexpected field in attribute: "+k)
 
-    def __validate_schema(self, configuration_dict: dict):
-        for k, v in configuration_dict.items():
-            if v in ['string', 'int', 'boolean', 'file']:
-                continue
-            elif isinstance(v, dict):
-                self.__validate_configuration(configuration_dict)
+    def __validate_schema(self, schema):
+        if schema not in ['string', 'int', 'float', 'boolean', 'file']:
+            if isinstance(schema, dict):
+                for k, v in schema.items():
+                    # TODO validate k also
+                    self.__validate_schema(v)
             else:
-                return False
-        return True
+                raise TypeError('Schema contains %s, which is neither a valid primitive schema nor a dict' % str(schema))
+
+    def __validate_columns(self, schema):
+        if isinstance(schema, dict):
+            for k, v in schema.items():
+                # TODO validate k also
+                self.__validate_columns(v)
+        elif not isinstance(schema, str):
+            raise TypeError('Column mapping contains %s, which is neither a string nor a dict' % str(schema))
 
     def extract_attribute_keys(self):
         keys = []

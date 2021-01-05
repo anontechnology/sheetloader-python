@@ -7,7 +7,7 @@ def validate_columns(headers, column_config):
         if column_config not in headers:
             raise TypeError("Attempting to read from nonexistent column", column_config)
     else:
-        for key, value in column_config:
+        for key, value in column_config.items():
             validate_columns(headers, value)
 
 def validate_all_columns(headers, attributes):
@@ -19,7 +19,7 @@ def get_primitive(attribute_schema, value):
         return int(value)
     elif attribute_schema == 'boolean':
         return bool(value)
-    elif attribute_schema == 'double':
+    elif attribute_schema == 'float':
         return float(value)
     return str(value)
     
@@ -47,7 +47,7 @@ def load_excel(file_path: str, records: int, conf_path: str,
     vault = vizivault.ViziVault(base_url=url, api_key=api_key, encryption_key=encryption_key, decryption_key=decryption_key)
 
     for attribute in configuration.attributes:
-        attribute_def = vizivault.AttributeDefinition(**attribute)
+        attribute_def = vizivault.AttributeDefinition(**{k:v for k, v in attribute.items() if k not in {'columns'}})
         vault.store_attribute_definition(attribute_definition=attribute_def)
     # Doing this ahead of time also serves to identify vault communication exceptions. Might want to explicitly check for those though
 
@@ -63,7 +63,11 @@ def load_excel(file_path: str, records: int, conf_path: str,
 
         for row_cells in sheet.iter_rows(min_row=2):
             #TODO Need to validate users exist and if it's an update or an insertion
-            new_user = vizivault.User(str(row_cells[header_map[configuration.user_id_column]].value))
+            userid = row_cells[header_map[configuration.user_id_column]].value
+            if userid is None:
+                break
+
+            new_user = vizivault.User(str(userid))
 
             for attribute in configuration.attributes:
                 new_user.add_attribute(attribute=attribute['name'], value=assemble_value(attribute['columns'], attribute['schema'], header_map, row_cells))
