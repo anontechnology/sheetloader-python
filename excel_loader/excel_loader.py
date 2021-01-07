@@ -22,7 +22,6 @@ def get_primitive(attribute_schema, value):
     elif attribute_schema == 'float':
         return float(value)
     return str(value)
-    
 
 def assemble_value(attribute_columns, attribute_schema, header_map, cells):
     if type(attribute_columns) is str:
@@ -46,13 +45,13 @@ def load_excel(file_path: str, records: int, conf_path: str,
 
     vault = vizivault.ViziVault(base_url=url, api_key=api_key, encryption_key=encryption_key, decryption_key=decryption_key)
 
+
     for attribute in configuration.attributes:
         attribute_def = vizivault.AttributeDefinition(**{k:v for k, v in attribute.items() if k not in {'columns'}})
         vault.store_attribute_definition(attribute_definition=attribute_def)
-    # Doing this ahead of time also serves to identify vault communication exceptions. Might want to explicitly check for those though
 
-
-    #TODO Load in parallel and validate data types. Mostly the existance of a valid users.
+    #TODO Load in parallel and validate data types based on primitive schemas.
+    # Could potentially also check if user exists (update) or will be created (insertion)
 
     workbook = openpyxl.load_workbook(file_path)
     for sheet in workbook.worksheets:
@@ -62,7 +61,6 @@ def load_excel(file_path: str, records: int, conf_path: str,
         validate_all_columns(header_map.keys(), configuration.attributes)
 
         for row_cells in sheet.iter_rows(min_row=2):
-            #TODO Need to validate users exist and if it's an update or an insertion
             userid = row_cells[header_map[configuration.user_id_column]].value
             if userid is None:
                 break
@@ -73,7 +71,7 @@ def load_excel(file_path: str, records: int, conf_path: str,
                 new_user.add_attribute(attribute=attribute['name'], value=assemble_value(attribute['columns'], attribute['schema'], header_map, row_cells))
             vault.save(new_user)
 
-    #TODO Export the result of the upload as a lo file and STDIO. Export shoudl be inserts/updates and errors or warnings.
+    #TODO Export the result of the upload as a log file and STDIO. Export shoudl be inserts/updates and errors or warnings.
 
 
 
