@@ -32,38 +32,40 @@ class Configuration:
             if 'columns' not in attribute:
                 raise TypeError('Attribute %s has no column mapping specified' % attribute['name'])
 
-            self.__validate_schema(attribute['schema'])
+            name = attribute['name']
+            self.__validate_schema(name, attribute['schema'])
 
             for k, v in attribute.items():
                 if k in {'name','key', 'hint', 'createdDate', 'modifiedDate'}:
                     if not isinstance(v, str):
-                        raise TypeError("Expected string for %s (got %s instead)" % (k, str(v)))
+                        raise TypeError("Expected string for %s in attribute %s (got %s instead)" % (k, name, str(v)))
                 elif k in {'immutable', 'indexed', 'mandatory'}:
                     if not (isinstance(v, str) and v.capitalize() in ['TRUE', 'FALSE']):
-                        raise TypeError("Expected boolean for %s (got %s instead)" % (k, str(v)))
+                        raise TypeError("Expected boolean for %s in attribute %s (got %s instead)" % (k, name, str(v)))
                 elif k in {'tags', 'regulations'}:
                     if not isinstance(v, list):
-                        raise TypeError("Expected list for %s (got %s instead)" % (k, str(v)))
+                        raise TypeError("Expected list for %s in attribute %s (got %s instead)" % (k, name, str(v)))
                 elif k == 'columns':
-                    self.__validate_columns(v, attribute['schema'])
+                    self.__validate_columns(name, v, attribute['schema'])
                 elif k != 'schema':
-                    raise TypeError("Unexpected field in attribute: "+k)
+                    raise TypeError("Unexpected field in attribute %s: %s" % (name, k))
 
-    def __validate_schema(self, schema):
+    def __validate_schema(self, name, schema):
         if schema not in ['string', 'int', 'float', 'boolean', 'file']:
             if isinstance(schema, dict):
                 for k, v in schema.items():
                     # TODO validate k also
-                    self.__validate_schema(v)
+                    self.__validate_schema(name, v)
             else:
-                raise TypeError('Schema contains %s, which is neither a valid primitive schema nor a dict' % str(schema))
+                raise TypeError('Schema for %s contains %s, which is neither a valid primitive schema nor a dict' % (name, str(schema)))
 
-    def __validate_columns(self, columns, schema):
+    def __validate_columns(self, name, columns, schema):
         if isinstance(columns, dict):
             for k, v in columns.items():
                 if k not in schema:
-                    raise TypeError('Column mapping reads from subattribute %s, which is not present in the corresponding schema')
-                self.__validate_columns(v, schema[k])
+                    raise TypeError('Column mapping for %s reads from subattribute %s, which is not present in the corresponding schema' % (name, k))
+                if isinstance(v, dict) != isinstance(schema[k], dict):
+                    raise TypeError('Structural inconsistency between column mapping and schema for %s in subattribute %s' % (name, k))
+                self.__validate_columns(name, v, schema[k])
         elif not isinstance(columns, str):
-            raise TypeError('Column mapping contains %s, which is neither a string nor a dict' % str(schema))
-
+            raise TypeError('Column mapping for %s contains %s, which is neither a string nor a dict' % (name, str(schema)))
