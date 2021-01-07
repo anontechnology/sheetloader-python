@@ -29,12 +29,11 @@ def assemble_value(attribute_columns, attribute_schema, header_map, cells):
     else:
         return {column : assemble_value(attribute_columns[column], attribute_schema[column], header_map, cells) for column in attribute_columns}
 
-def load_excel(file_path: str, records: int, conf_path: str,
+def load_excel(file_path: str, conf_path: str,
                 url: str,
                 api_key: str,
                 encryption_key_file: str,
-                decryption_key_file: str,
-                output_path: str):
+                decryption_key_file: str):
                 
     configuration = Configuration(conf_path)
 
