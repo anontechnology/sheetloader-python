@@ -59,6 +59,8 @@ def load_excel(file_path: str, conf_path: str,
         header_map = {cell.value : i for i, cell in enumerate(next(sheet.rows))}
         validate_all_columns(header_map.keys(), configuration.attributes)
 
+        count = 0
+
         for row_cells in sheet.iter_rows(min_row=2):
             userid = row_cells[header_map[configuration.user_id_column]].value
             if userid is None:
@@ -66,10 +68,22 @@ def load_excel(file_path: str, conf_path: str,
 
             new_user = vizivault.User(str(userid))
 
+            valid = True
             for attribute in configuration.attributes:
-                new_user.add_attribute(attribute=attribute['name'], value=assemble_value(attribute['columns'], attribute['schema'], header_map, row_cells))
-            vault.save(new_user)
+                try:
+                    new_user.add_attribute(attribute=attribute['name'], value=assemble_value(attribute['columns'], attribute['schema'], header_map, row_cells))
+                except ValueError as error:
+                    valid = False
+                    print("Invalid value for attribute %s (%s)" % (attribute['name'], " ".join(error.args)))
 
+            if valid:
+                vault.save(new_user)
+                count += 1
+                print("Loaded user %s" % userid)
+            else:
+                print("User %s has invalid data; skipping" % userid)
+
+        print("Loaded data for %d users" % count)
     #TODO Export the result of the upload as a log file and STDIO. Export shoudl be inserts/updates and errors or warnings.
 
 
